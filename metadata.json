@@ -1,0 +1,7 @@
+{
+  "name": "WebRun Tracker",
+  "description": "A high-performance web-based running tracker that visualizes your route, tracks distance, and monitors real-time location using OpenStreetMap.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
