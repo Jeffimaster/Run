@@ -20,6 +20,36 @@ const App: React.FC = () => {
   const timerId = useRef<number | null>(null);
   const lastPosition = useRef<Coordinate | null>(null);
 
+  // Function to manually request single position (for initial setup)
+  const locateUser = useCallback(() => {
+    if (!navigator.geolocation) {
+      setErrorMsg('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    setErrorMsg(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setCurrentPosition({
+          lat: latitude,
+          lng: longitude,
+          timestamp: pos.timestamp
+        });
+      },
+      (error) => {
+        let msg = 'Unable to retrieve location.';
+        switch(error.code) {
+            case error.PERMISSION_DENIED: msg = 'Location permission denied. Please enable it in settings.'; break;
+            case error.POSITION_UNAVAILABLE: msg = 'Location information is unavailable.'; break;
+            case error.TIMEOUT: msg = 'Location request timed out.'; break;
+        }
+        setErrorMsg(msg);
+      },
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  }, []);
+
   // Start tracking location
   const startTracking = useCallback(async () => {
     if (!navigator.geolocation) {
@@ -75,11 +105,11 @@ const App: React.FC = () => {
         });
       },
       (error) => {
-        let msg = 'Unable to retrieve location.';
+        let msg = 'Tracking interrupted.';
         switch(error.code) {
             case error.PERMISSION_DENIED: msg = 'Location permission denied.'; break;
-            case error.POSITION_UNAVAILABLE: msg = 'Location information is unavailable.'; break;
-            case error.TIMEOUT: msg = 'The request to get user location timed out.'; break;
+            case error.POSITION_UNAVAILABLE: msg = 'Location unavailable.'; break;
+            case error.TIMEOUT: msg = 'Location request timed out.'; break;
         }
         setErrorMsg(msg);
         setStatus(TrackingStatus.ERROR);
@@ -113,27 +143,31 @@ const App: React.FC = () => {
     };
   }, [stopTracking]);
 
-  // Initial location fetch to center map (optional, improves UX before starting)
+  // Initial attempt - but relying on user interaction via locateUser is better for mobile
   useEffect(() => {
     if (navigator.geolocation && status === TrackingStatus.IDLE) {
-      navigator.geolocation.getCurrentPosition(
+       // We try silently, but if it fails, the user will use the "Enable Location" button
+       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setCurrentPosition({
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
             timestamp: pos.timestamp
           });
-        },
-        () => {
-           // Silently fail for initial fetch, we'll ask for permission properly on Start
-        }
-      );
+        }, 
+        () => {}, // Ignore initial errors
+        { timeout: 3000 }
+       );
     }
   }, [status]);
 
   return (
     <div className="relative w-full h-full bg-slate-50 overflow-hidden">
-      <MapDisplay currentPosition={currentPosition} route={route} />
+      <MapDisplay 
+        currentPosition={currentPosition} 
+        route={route} 
+        onLocateMe={locateUser} 
+      />
       <Controls 
         status={status} 
         stats={stats} 

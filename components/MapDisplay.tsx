@@ -2,9 +2,9 @@ import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Polyline, CircleMarker, useMap, Marker, Popup } from 'react-leaflet';
 import { Coordinate } from '../types';
 import L from 'leaflet';
+import { MapPin } from 'lucide-react';
 
 // Fix for default Leaflet marker icons in React
-// We create a custom simple dot icon using CSS/HTML
 const startIcon = L.divIcon({
   className: 'custom-div-icon',
   html: "<div style='background-color: #10b981; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);'></div>",
@@ -15,6 +15,7 @@ const startIcon = L.divIcon({
 interface MapDisplayProps {
   currentPosition: Coordinate | null;
   route: Coordinate[];
+  onLocateMe: () => void;
 }
 
 const RecenterMap: React.FC<{ position: Coordinate }> = ({ position }) => {
@@ -25,15 +26,29 @@ const RecenterMap: React.FC<{ position: Coordinate }> = ({ position }) => {
   return null;
 };
 
-const MapDisplay: React.FC<MapDisplayProps> = ({ currentPosition, route }) => {
+const MapDisplay: React.FC<MapDisplayProps> = ({ currentPosition, route, onLocateMe }) => {
   // Default to a neutral view if no location yet
   const defaultCenter: [number, number] = [0, 0];
   const zoomLevel = 16;
 
   if (!currentPosition && route.length === 0) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-        <p className="text-gray-500">Waiting for GPS signal...</p>
+      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 px-4">
+        <div className="bg-white p-8 rounded-2xl shadow-xl flex flex-col items-center text-center max-w-sm w-full border border-slate-100">
+          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-500">
+            <MapPin size={32} />
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 mb-2">Location Needed</h3>
+          <p className="text-slate-500 mb-6 text-sm">
+            To track your run and visualize your route, please enable location access.
+          </p>
+          <button 
+            onClick={onLocateMe}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
+          >
+            Enable Location
+          </button>
+        </div>
       </div>
     );
   }
@@ -76,7 +91,6 @@ const MapDisplay: React.FC<MapDisplayProps> = ({ currentPosition, route }) => {
             pathOptions={{ fillColor: '#3b82f6', color: 'white', weight: 2, fillOpacity: 1 }} 
             radius={8}
           />
-          {/* Pulse effect wrapper logic could go here, but circle marker is cleaner for now */}
           <RecenterMap position={currentPosition} />
         </>
       )}
